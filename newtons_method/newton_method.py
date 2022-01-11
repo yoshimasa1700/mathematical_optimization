@@ -21,7 +21,14 @@ def newton_method(func, deriv_1st_func, deriv_2nd_func, x0):
 
     x_hist = [x]
 
+    safe_count = 0
+
     while abs(deriv_1st_func(x)) > EPSILON:
+
+        safe_count +=1
+        if safe_count >= 10:
+            return x, x_hist
+
         d = - deriv_1st_func(x) / deriv_2nd_func(x)
         x = x + d
         x_hist.append(x)

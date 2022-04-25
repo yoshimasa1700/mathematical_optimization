@@ -16,11 +16,22 @@ def deriv_1st_func(x):
 tau = 0.2
 alpha_step = 0.9
 
+
 def armijo_condition(x0, alpha):
     dest_score = func(x0 - deriv_1st_func(x0) * alpha)
-    armijo_score = func(x0) + deriv_1st_func(x0) * tau * alpha
 
-    return armijo_score < dest_score
+    def g(alpha):
+        return func(x0 - deriv_1st_func(x0) * alpha)
+
+    def g_dash(alpha):
+        return deriv_1st_func(x0 - deriv_1st_func(x0) * alpha) * (- deriv_1st_func(x0))
+
+    def q(alpha):
+        return g(0) + tau * g_dash(0) * alpha
+
+    armijo_score = q(alpha)
+
+    return armijo_score > dest_score
 
 
 def line_search(func, deriv_1st_func, x0):
@@ -31,27 +42,25 @@ def line_search(func, deriv_1st_func, x0):
 
     safe_count = 0
 
-    alpha = 0.4
+    alpha = 0.26
     tau = 2.0
 
-    alpha_hist = []
+    alpha_hist = [alpha]
 
     while abs(deriv_1st_func(x)) > EPSILON:
 
-        safe_count +=1
+        safe_count += 1
         if safe_count >= 10:
             return x, x_hist, alpha_hist
 
         # adjust alpha if not satisfy armijo condition.
-        alpha_hist_temp = [alpha]
-        while armijo_condition(x, alpha):
+        while not armijo_condition(x0, alpha):
             alpha *= alpha_step
-            alpha_hist_temp.append(alpha)
+            alpha_hist.append(alpha)
 
         d = -alpha * deriv_1st_func(x)
         x = x + d
         x_hist.append(x)
-        alpha_hist.append(alpha_hist_temp)
 
     return x, x_hist, alpha_hist
 
@@ -81,18 +90,23 @@ def main():
     fig2 = plt.figure(figsize=(10.0, 7.0))
     ax2 = fig2.add_subplot()
     ax2.grid()
-    # ax2.set_ylim([0, 30.0])
 
-    for idx, x0 in enumerate([x_hist[0]]):
-        g = lambda alpha: func(x0 - deriv_1st_func(x0) * alpha)
-        q = lambda alpha: func(x0) + deriv_1st_func(x0) * tau * alpha
+    x0 = x_hist[0]
 
-        visualize(g, 0, 0.41, ax2, "{} th iteration".format(idx))
-        visualize(q, 0, 0.41, ax2, "{} th iteration".format(idx))
+    def g(alpha):
+        return func(x0 - deriv_1st_func(x0) * alpha)
 
-        ax2.plot(alpha_step[idx], list(map(g, alpha_step[idx])),
-                marker='x', markersize=15, label="optimize history")
+    def g_dash(alpha):
+        return deriv_1st_func(x0 - deriv_1st_func(x0) * alpha) * (- deriv_1st_func(x0))
 
+    def q(alpha):
+        return g(0) + tau * g_dash(0) * alpha
+
+    visualize(g, 0, 0.41, ax2, "G")
+    visualize(q, 0, 0.41, ax2, "Armijo condition")
+
+    ax2.plot(alpha_step, list(map(g, alpha_step)),
+             marker='x', markersize=15, label="optimize history")
 
     # plot optimal result
     ax.plot(x, func(x),
@@ -104,6 +118,7 @@ def main():
 
     fig.suptitle("Line search optimization method")
     ax.legend()
+    ax2.legend()
     plt.show()
 
 
